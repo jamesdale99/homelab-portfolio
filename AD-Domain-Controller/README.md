@@ -1,51 +1,70 @@
-# 🛡️ Active Directory Domain Controller (DC01) Project
+# 📚 Project 1: Building an Active Directory Domain (Homelab Basics)
 
-## Project Goal
-To design, build, and configure a foundational Active Directory (AD) environment from scratch. This project demonstrates core skills in **Virtualization, Static Networking, DNS management,** and **Active Directory User/Group Administration**, which are essential for Help Desk and Junior System Administrator roles.
+My goal for this first project was to set up a functional, basic network environment using the tools a small IT department would use. The main challenges I focused on were reliable networking and centralizing user logins. This documentation is written to help me remember exactly *how* I solved each problem.
 
----
+## 🌟 Key Takeaways (What I Learned)
 
-## 1. Initial Server and Network Configuration
+* **DNS is the Directory:** I learned that Active Directory (AD) won't work unless the server's DNS is pointing to itself (127.0.0.1) and the client is pointing directly to the server (192.168.10.10). DNS is basically the phone book that lets the client find the domain.
+* **Small Mistakes are Big Problems:** The entire project stalled because of two tiny typos in the IP address. This taught me that troubleshooting is often just obsessively double-checking simple network settings.
+* **Groups Save Time:** Managing permissions is much easier using **Security Groups**. I only have to manage one group, not every single user, which is a massive time saver as the network grows.
 
-* **Server Role:** Windows Server 2022 Standard (Desktop Experience)
-* **Server Name:** DC01
-* **Domain Name:** homelab.local
-* **Primary IP:** 192.168.10.10
+***
 
-### 1.1 Virtual Machine Setup
-* **Action:** Allocated dedicated resources for reliable performance.
-* **Demonstrated Skill:** Resource management and understanding OS minimum requirements.
-![Hardware Allocation (4GB RAM, 2 CPUs)](images/1_Hardware_Allocation.png)
+## 1. Setting Up the DC01 Server
 
-### 1.2 Static IP Configuration
-* **Action:** Manually configured the server with a static IP and set the Preferred DNS to the loopback address (127.0.0.1) to prepare for Domain Promotion.
-* **Demonstrated Skill:** Foundational TCP/IP and DNS configuration.
+### 1.1 Hardware and Static IP
+
+To make sure the server never crashed or got lost on the network, I took two steps:
+
+* **Hardware:** I gave the server **4 GB of RAM and 2 CPUs**—enough power to run Windows Server 2022 without issues.
+
+* **Static IP (The Logic):** I manually set the IP address to **192.168.10.10**. I learned that servers providing central services **must** have a fixed address.
+    * **192.168.10.10** is our chosen, permanent address. I reserved the `.10` for the server because it's the most important device.
+    * **DNS:** I set the DNS to **127.0.0.1 (Loopback)**. This is a crucial rule for a Domain Controller: **The DC must use itself for DNS** because it is the only device that holds the address book for the `homelab.local` domain.
+
 ![DC01 Static IP and DNS Configuration](images/4_Static_IP_and_DNS_config.png)
----
 
-## 2. Active Directory Deployment
+***
 
-### 2.1 Role Installation and Promotion
-* **Action:** Installed the Active Directory Domain Services (AD DS) role and promoted the server to a new forest (`homelab.local`).
-* **Verification:** Confirmed the successful promotion by querying the FSMO roles.
-* **Demonstrated Skill:** Domain creation and verification of critical AD services.
+## 2. Turning the Server into a Domain Controller (AD)
+
+### 2.1 Promoting the Server
+
+I needed the server to become the main boss of the network, so I promoted it to a Domain Controller (DC) for the **`homelab.local`** domain.
+
+* **Action:** I installed the **Active Directory Domain Services (AD DS) Role**.
+* **Proof:** I used the command `netdom query fsmo` to make sure the server was correctly holding all the master roles. If this command works, the promotion was successful.
+
 ![FSMO Role Verification via netdom query fsmo](images/5_Domain_Promotion_Verification.png)
 
-### 2.2 User and Group Management (Help Desk Simulation)
-* **Action:** Created the **Personnel** Organizational Unit (OU), the test user **Jane Doe (jdoe)**, and the **GBL-Sales-Access** security group.
-* **Demonstrated Skill:** AD object creation, organizational structure (OUs), and access control management (Groups).
+### 2.2 Organizing Users and Permissions
+
+To keep the network clean, I created an organized structure:
+
+* **Organization:** I created the **Personnel OU** (Organizational Unit) to keep department-specific accounts separate from default accounts.
+* **User & Group:** I created the test user **Jane Doe (`jdoe`)** and added her to the **`GBL-Sales-Access`** security group. This means that if I ever need to give sales access to a new server, I only give the permission to the group, and Jane automatically gets it.
+
 ![ADUC Console showing Jane Doe and Group Membership](images/7_ADUC_Group_Membership.png)
----
 
-## 3. Client Integration and Validation
+***
 
-### 3.1 Client Network Troubleshooting
-* **Action:** Built a Windows 11 client machine (`Win11-Client01`) and connected it to the `LAB-NET` internal network. **Troubleshooting Note:** The client failed to ping the server due to an IP address typo, which was fixed from `198.168.10.20` to `192.168.10.20` and verified via `ipconfig /all`.
-* **Demonstrated Skill:** Network troubleshooting (ICMP/DNS), static IP configuration on a client OS.
-![Client ipconfig /all showing 192.168.10.20 IP and 192.168.10.10 DNS](images/8_Client_Network_Config.jpg)
----
+## 3. Connecting the Windows 11 Client
 
-### 3.2 Domain Join and Authentication
-* **Action:** Joined the `Win11-Client01` client to `homelab.local` using the DC's Administrator credentials, and logged in successfully as the **`jdoe`** domain user.
-* **Demonstrated Skill:** Centralized authentication, client enrollment, and successful application of domain policies (forced password change).
-![Windows 11 desktop logged in as domain user Jane JD. Doe](images/9_Domain_Join_Success.jpg)
+### 3.1 🧠 Troubleshooting the Connection
+
+Connecting the client machine (`Win11-Client01`) to the DC was the hardest part. The connection failed, and I had to figure out why.
+
+* **The Problem:** The ping test from the client to the server (`ping 192.168.10.10`) failed with 100% loss.
+* **My Discovery:** I found **two typos** in the client's network settings. The IP was set to `198.168.10.20` instead of `192.168.10.20`, and the DNS was also wrong.
+* **The Fix:** I fixed the typos and set the client's DNS to point directly to the server's IP (`192.168.10.10`). This proved that troubleshooting is about patiently checking every small detail.
+
+![Client ipconfig /all showing 192.168.10.20 IP and 192.168.10.10 DNS](images/8_Client_Network_Config.png)
+
+### 3.2 Domain Join and Final Test
+
+With the network fixed, the domain join was the final proof of concept:
+
+* **Action:** I joined the Windows 11 client to **`homelab.local`**.
+* **Verification:** I logged in as **`jdoe`**. The system immediately forced a password change, which confirmed that the DC was successfully controlling the client's security policies. This means the whole setup works!
+
+![Windows 11 desktop logged in as domain user Jane JD. Doe](images/9_Domain_Join_Success.png)
