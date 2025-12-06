@@ -1,4 +1,4 @@
-# 🛠️ James Dale's Homelab & IT Portfolio
+# 🛠️ Homelab & IT Portfolio
 
 👋 **Welcome!** This repository showcases hands-on, foundational skills in **Windows Server Administration, Networking, Active Directory,** and **Virtualization**. All projects are built from scratch using Windows Server 2022 and Windows 11 within a VirtualBox environment.
 
